@@ -18,7 +18,12 @@
 	div.jumbotron {margin-top: 2.3em;}
 	div.jumbotron p.lead { color: #ccc;}
 	h1 { font-weight: bold; letter-spacing: -1px; }
-	
+	.blocky { height: 12px; width: 12px; margin-right: 6px; float: left; margin-top:4px; border-radius:2px; -moz-border-radius:2px; -webkit-border-radius:2px;}
+	th { cursor:pointer; cursor:hand; }
+	th:hover { background: #e5f5e0 }
+	#countdown, #last_updated, .glyphicon-time { color:#fff; font-size:60%; }
+    
+
     </style>
 
     <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -59,25 +64,77 @@
 	
 	<div class="jumbotron green">
     <div class="container">
-			<h1>Candidate tracker</h1>
-			<p class="lead">Your one-stop shop for 2014 filing information.<br/><span id="countdown"></span></p>
+			<h1>Candidate tracker 2014</h1>
+			<p class="lead">Your one-stop shop for Douglas and Sarpy filings<br/><span id="last_updated"></span> <span class="glyphicon glyphicon-time"></span> <span id="countdown"></span></p>
 			
 	</div>
 	</div>
 	
 	<div class="container" style="margin-bottom: 50px;">
 
-	
-	
-<label class="checkbox-inline">
-  <input type="checkbox" class="demcheck" checked> Democrats
+    <div class="row">
+    
+<div class="col-md-2">
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="demcheck" checked><div class="blocky" style="background: #3182bd;"></div> Democrats
 </label>
-<label class="checkbox-inline">
-  <input type="checkbox" class="repcheck" checked> Republicans
+</div>
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="repcheck" checked><div class="blocky" style="background: #de2d26;"></div> Republicans
 </label>
-<label class="checkbox-inline">
-  <input type="checkbox" class="othercheck" checked> Other
+</div>
+
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="othercheck" checked><div class="blocky" style="background: #fe9929;"></div> Other
 </label>
+</div>
+</div>
+
+<div class="col-md-2">
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="sarpycheck" checked> Sarpy
+</label>
+</div>
+
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="dougcheck" checked> Douglas
+</label>
+</div>
+
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="statecheck" checked> Statewide
+</label>
+</div>
+
+</div>
+
+<div class="col-md-2">
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="fedcheck" checked> Federal
+</label>
+</div>
+
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="inccheck" checked> Incumbents
+</label>
+</div>
+
+<div class="checkbox">
+<label>
+  <input type="checkbox" class="chalcheck" checked> Challengers
+</label>
+</div>
+</div>
+
+</div><!-- end row -->
 	
 		<div id="candidates"></div>
 
@@ -97,7 +154,7 @@
 
     <iframe name="hidden_iframe" id="hidden_iframe" style="display:none;" onload="if(submitted) {location.reload()}"></iframe>    
 
-<form action="https://docs.google.com/forms/d/1mUxawh42VVFau-vrngi4Pj3xoEMtqUaHVRfjILEk6sY/formResponse" method="POST" id="thinger" target="hidden_iframe" role="form" onsubmit="Javascript: $('#entry').modal('hide'); setTimeout(function() {$('#thinger').find('input:text, input:password, input:file, select, textarea').val(''); $('#thinger').find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');}, 1000); setTimeout(function() {location.reload(true);}, 2500)">
+<form action="https://docs.google.com/forms/d/1mUxawh42VVFau-vrngi4Pj3xoEMtqUaHVRfjILEk6sY/formResponse" method="POST" id="thinger" target="hidden_iframe" role="form" onsubmit="Javascript: $('#cand').modal('hide'); setTimeout(function() {$('#thinger').find('input:text, input:password, input:file, select, textarea').val(''); $('#thinger').find('input:radio, input:checkbox').removeAttr('checked').removeAttr('selected');}, 1000); setTimeout(function() {location.reload(true);}, 3500)">
 	
 <input type="text" name="entry.1252196491" value="" class="form-control" id="entry_1252196491" dir="auto" aria-label="last name  " title="" placeholder="Last name"><br/>
 
@@ -107,6 +164,8 @@
 <option value="">-- County --</option>
 <option value="Sarpy">Sarpy</option>
 <option value="Douglas">Douglas</option>
+<option value="Statewide">Statewide</option>
+<option value="Federal">Federal</option>
 </select>
 <br/>
 
@@ -114,7 +173,7 @@
 
 <input type="text" name="entry.872767722" value="" id="entry_872767722" dir="auto" aria-label="district  " title="" class="form-control" placeholder="District"><br/>
 
-<input type="text" name="entry.1615347966" value="" class="form-control" id="entry_1615347966" dir="auto" aria-label="link  " title="" placeholder="Race URL"><br/>
+<input type="text" name="entry.1615347966" value="" class="form-control" id="entry_1615347966" dir="auto" aria-label="link  " title="" placeholder="Candidate URL"><br/>
 
 <input type="text" name="entry.644586483" value="" class="form-control" id="entry_644586483" dir="auto" aria-label="filing date  " title="" placeholder="Filing date in mm/dd/yyyy form"><br/>
 
@@ -193,6 +252,7 @@
 
         <script>
 var colblock = '';
+var dates = [];
 
         function displayContent(json) {
             var table_content='';
@@ -204,27 +264,37 @@ var colblock = '';
             var mugurl = json.feed.entry[i].gsx$mugurl.$t;
             var bio = json.feed.entry[i].gsx$bio.$t;
             var district = json.feed.entry[i].gsx$district.$t;
-            var race = ''
+            var race = json.feed.entry[i].gsx$race.$t
 			if (json.feed.entry[i].gsx$link.$t)
-				{ race = '<a href="' + json.feed.entry[i].gsx$link.$t + '">' + json.feed.entry[i].gsx$race.$t + '</a>' }
+				{ name = '<a href="' + json.feed.entry[i].gsx$link.$t + '" target="_blank">' + json.feed.entry[i].gsx$first.$t + ' ' + json.feed.entry[i].gsx$last.$t + '</a>' }
 			else
-				{ race = json.feed.entry[i].gsx$race.$t };
+				{ name = json.feed.entry[i].gsx$first.$t + ' ' + json.feed.entry[i].gsx$last.$t };
             var incumbent = json.feed.entry[i].gsx$incumbent.$t.toLowerCase();
 			var party = json.feed.entry[i].gsx$party.$t;
 			var filed = json.feed.entry[i].gsx$filed.$t.replace("'","");
+			var timestamp = new Date(json.feed.entry[i].gsx$timestamp.$t);
+            dates.push(timestamp);
 
             if (party == "democrat") 
-                    { colblock = 'primary' }
+                    { colblock = '#3182bd' }
             else if (party == "republican") 
-                    { colblock = 'danger' }
+                    { colblock = '#de2d26' }
             else if (party == "other")
-                    { colblock = 'warning' }
+                    { colblock = '#fe9929' }
                     
 table_content += [
-'<tr class="' + party + '"><td><span style="display:none;">' + last + '</span><span class="label label-' + colblock + '"> ' + first + " " + last + '</span></td><td>' + race + '</td><td>' + district + '</td><td>' + county + '</td><td>' + filed + '</td></tr>'
+'<tr class="' + party + ' ' + incumbent + ' ' + county + '"><td><span style="display:none;">' + last + '</span><div class="blocky" style="background:' + colblock + '"></div>' + name + '</td><td>' + race + '</td><td>' + district + '</td><td>' + county + '</td><td>' + filed + '</td></tr>'
 ].join('');
                         
-document.getElementById('candidates').innerHTML = "<table id='reqqqs' class='table table-responsive table-striped'><thead><tr><th>Name</th><th>Race</th><th>District</th><th>County</th><th>Filed</th></thead><tbody>" + table_content + '</tbody></table>'
+document.getElementById('candidates').innerHTML = "<table id='reqqqs' class='table table-responsive table-striped'><thead><tr><th>Name</th><th>Race</th><th>District</th><th>Where</th><th>Filed</th></thead><tbody>" + table_content + '</tbody></table>'
+
+var maxDate = new Date(Math.max.apply(null,dates));
+
+var apmonths = ["Jan.", "Feb.", "March", "April", "May", "June", "July", "Aug.", "Sept.", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."]
+
+var day = maxDate.getDate(); 
+
+document.getElementById('last_updated').innerHTML = "Last updated " + apmonths[maxDate.getMonth()] + " " + day
 
     } }
 
@@ -232,11 +302,8 @@ $('#adder').click(function() {
 setTimeout(function() {$('#entry_1252196491').focus()}, 500);
 });
 
-
 var target_date = new Date("Tue May 13 2014 08:00:00 GMT-0600").getTime();
-
-var days, hours, minutes, seconds;
- 
+var days, hours, minutes, seconds; 
 var countdown = document.getElementById("countdown");
  
 setInterval(function () {
@@ -273,6 +340,54 @@ $('.othercheck').click(function() {
         $(".other").fadeIn('slow');
     } else {
         $(".other").fadeOut('slow');
+    }
+});
+
+$('.fedcheck').click(function() {
+    if( $('.fedcheck:checked').length > 0 ) {
+        $(".Federal").fadeIn('slow');
+    } else {
+        $(".Federal").fadeOut('slow');
+    }
+});
+
+$('.statecheck').click(function() {
+    if( $('.statecheck:checked').length > 0 ) {
+        $(".Statewide").fadeIn('slow');
+    } else {
+        $(".Statewide").fadeOut('slow');
+    }
+});
+
+$('.sarpcheck').click(function() {
+    if( $('.sarpcheck:checked').length > 0 ) {
+        $(".Sarpy").fadeIn('slow');
+    } else {
+        $(".Sarpy").fadeOut('slow');
+    }
+});
+
+$('.dougcheck').click(function() {
+    if( $('.dougcheck:checked').length > 0 ) {
+        $(".Douglas").fadeIn('slow');
+    } else {
+        $(".Douglas").fadeOut('slow');
+    }
+});
+
+$('.inccheck').click(function() {
+    if( $('.inccheck:checked').length > 0 ) {
+        $(".true").fadeIn('slow');
+    } else {
+        $(".true").fadeOut('slow');
+    }
+});
+
+$('.chalcheck').click(function() {
+    if( $('.chalcheck:checked').length > 0 ) {
+        $(".false").fadeIn('slow');
+    } else {
+        $(".false").fadeOut('slow');
     }
 });
 
